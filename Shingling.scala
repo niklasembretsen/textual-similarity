@@ -1,11 +1,12 @@
 import scala.io.Source
 import java.security.MessageDigest
 import scala.collection.mutable.TreeSet
+import java.nio.ByteBuffer
 
 object Shingling {
 
 	def main(args: Array[String]) {
-		shingling("news1forbes.txt", 5)
+		shingling("test.txt", 5)
 	}
 
 	def shingling(filename: String, k: Int) {
@@ -24,7 +25,11 @@ object Shingling {
 				documentShingles += shingle
 			}
 		}
-		val hashedSingles : TreeSet[Int] = documentShingles.map(word => MessageDigest.getInstance("MD5").digest(word.getInt))
+		val hashedSingles = documentShingles
+			.map(word => word.hashCode())
+
+		val orderedHashedShingles = TreeSet[Int]() ++ hashedSingles
 		documentShingles.foreach(println)
+		orderedHashedShingles.foreach(println)
 	}
 }
