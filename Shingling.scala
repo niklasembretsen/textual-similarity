@@ -8,6 +8,7 @@ object Shingling {
 	def main(args:Array[String]){
 		val docSet1 = shingling("test.txt", 2)
 		val docSet2 = shingling("test2.txt", 2)
+		val universalSet: TreeSet[Int] = docSet1.union(docSet2)
 		val comparison = jaccardSimilarity(docSet1, docSet2)
 		println(comparison)
 	}
@@ -46,7 +47,17 @@ object Shingling {
 		// generate n hash functions on the form (ax + b) % c
 		// where a is a random variable, , x the hashed value (shingle)
 		// and c the number of shingles
-		val c = hashedSingles.size
+		
+		val c: Int = hashedShingles.size
+		val r = new scala.util.Random(c)
+		val aValues: Vector[Int] = Vector.empty
+		//val result: Seq[Int] = for(i <- 0 to c) yield r.nextInt(c)
+		val result = for(i <- 1 to c) yield {
+    			r.nextInt(c)
+		}
+		println(result)
+		aValues
+		//val signaturevector : Vector[Int] = Vector.zeros(c)
 	}
 
 }
