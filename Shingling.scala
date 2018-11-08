@@ -2,6 +2,7 @@ import scala.io.Source
 import java.security.MessageDigest
 import scala.collection.mutable.TreeSet
 import java.nio.ByteBuffer
+import scala.util.Random
 
 object Shingling {
 
@@ -10,6 +11,7 @@ object Shingling {
 		val docSet2 = shingling("test2.txt", 2)
 		val universalSet: TreeSet[Int] = docSet1.union(docSet2)
 		val comparison = jaccardSimilarity(docSet1, docSet2)
+		val test = minHash(universalSet, 10)
 		println(comparison)
 	}
 
@@ -43,21 +45,38 @@ object Shingling {
 		orderedHashedShingles
 	}
 
-	def minHash (hashedShingles: TreeSet[Int], n: Int): Vector[Int] = {
+	def minHash (hashedShingles: TreeSet[Int], document: TreeSet[Int], n: Int): Set[Int] = {
 		// generate n hash functions on the form (ax + b) % c
-		// where a is a random variable, , x the hashed value (shingle)
+		// where a and b are random variables, x the hashed value (shingle)
 		// and c the number of shingles
-		
+		Random.setSeed(10)
+		val signatureVector: Set[Int] = Set()
 		val c: Int = hashedShingles.size
-		val r = new scala.util.Random(c)
-		val aValues: Vector[Int] = Vector.empty
-		//val result: Seq[Int] = for(i <- 0 to c) yield r.nextInt(c)
-		val result = for(i <- 1 to c) yield {
+		val r = new Random(c)
+
+		val aValues = for(i <- 1 to n) yield {
     			r.nextInt(c)
 		}
-		println(result)
-		aValues
-		//val signaturevector : Vector[Int] = Vector.zeros(c)
+
+		val bValues = for(i <- 1 to n) yield {
+    			r.nextInt(c)
+		}
+		
+		var rowNumber = 0
+		for (value <- hashedShingles) {
+			//the documents contains hash from row
+			if (document.contains(value)) {
+
+				for (i <- 0 to (n - 1)) {
+					val sigHash = (aValues(i) * rowNumber + bValues(i)) % c
+					if (signatureVector(i) > sigHash) {
+						signatureVector(i) = sigHash
+					}
+				}
+			}
+
+			rowNumber += 1
+		}
 	}
 
 }
