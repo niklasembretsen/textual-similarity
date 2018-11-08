@@ -13,8 +13,10 @@ object Shingling {
 	}
 
 	def jaccardSimilarity (document1: TreeSet[Int],document2: TreeSet[Int]): Double = {
-			val similarity = document1.intersect(document2).size / document1.union(document2).size
-			similarity
+			//compute the Jaccard similarity (A ∩ B) / (A U B)
+			val intersection: Double = document1.intersect(document2).size
+			val union: Double = document1.union(document2).size
+			intersection / union
 		}
 
 	def shingling (filename: String, k: Int): TreeSet[Int] = {
