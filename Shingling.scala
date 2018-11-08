@@ -21,25 +21,32 @@ object Shingling {
 
 	def shingling (filename: String, k: Int): TreeSet[Int] = {
 
-			//A set for holding the shingles of a document
-			var documentShingles: Set[String] = Set()
+		//A set for holding the shingles of a document
+		var documentShingles: Set[String] = Set()
 
-			//fetch each line from the specified file
-			for(line <- Source.fromFile(filename).getLines) {
-				//get the length of the line to know how far to go when
-				//creating the k-shingles of the line. Finally add
-				//each shingle to the set.
-				var lineLength = line.length
-				for(i <- 0 to (lineLength - k)) {
-					var shingle = line.slice(i, i + k)
-					documentShingles += shingle
-				}
+		//fetch each line from the specified file
+		for(line <- Source.fromFile(filename).getLines) {
+			//get the length of the line to know how far to go when
+			//creating the k-shingles of the line. Finally add
+			//each shingle to the set.
+			var lineLength = line.length
+			for(i <- 0 to (lineLength - k)) {
+				var shingle = line.slice(i, i + k)
+				documentShingles += shingle
 			}
-			val hashedSingles = documentShingles
-				.map(word => word.hashCode())
-
-			val orderedHashedShingles = TreeSet[Int]() ++ hashedSingles
-			orderedHashedShingles
 		}
+		val hashedSingles = documentShingles
+			.map(word => word.hashCode())
 
-}	
+		val orderedHashedShingles = TreeSet[Int]() ++ hashedSingles
+		orderedHashedShingles
+	}
+
+	def minHash (hashedShingles: TreeSet[Int], n: Int): Vector[Int] = {
+		// generate n hash functions on the form (ax + b) % c
+		// where a is a random variable, , x the hashed value (shingle)
+		// and c the number of shingles
+		val c = hashedSingles.size
+	}
+
+}
