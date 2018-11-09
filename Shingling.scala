@@ -2,6 +2,7 @@ import scala.io.Source
 import java.security.MessageDigest
 import scala.collection.mutable.TreeSet
 import java.nio.ByteBuffer
+import java.io.File
 import scala.util.Random
 import java.lang.Math
 import scala.util.hashing.MurmurHash3
@@ -11,7 +12,17 @@ object Shingling {
 	def main(args:Array[String]){
 		val docSet1 = shingling("test.txt", 3)
 		val docSet2 = shingling("test2.txt", 3)
-		val universalSet: TreeSet[Int] = docSet1.union(docSet2)
+		val k = 3
+		val directory = "/test"
+		val files = new File(directory).listFiles
+
+		val universalSet: TreeSet[Int] = 
+					files.flatMap(file => shingling(file, k))
+						 .toSet
+
+		println(universalSet)
+
+		docSet1.union(docSet2)
 		val universalMap: Map[Int, Int] = universalSet.zipWithIndex.toMap
 		val comparison = jaccardSimilarity(docSet1, docSet2)
 		//nu gotta be cubic, bro
