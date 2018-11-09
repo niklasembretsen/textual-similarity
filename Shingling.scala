@@ -22,36 +22,46 @@ object Shingling {
 		val n = 8
 
 		val files = new File(directory).listFiles
+	
 
 		for(file <- files){
-			val docSet = shingling(file.getName, k)
+			val path: String = directory + "/" + file.getName
+			val docSet = shingling(path, k)
 			documents = documents :+ docSet
 			universalSet = universalSet ++ docSet
 		}
 
 		val universalMap: Map[Int, Int] = universalSet.zipWithIndex.toMap
 
-		val comparison = jaccardSimilarity(docSet1, docSet2)
-		val sign1 = minHash(universalMap, docSet1, n)
-		val sign2 = minHash(universalMap, docSet2, n)
-		val signatureSeq = Seq(sign1, sign2)
-		val frac = compareSignatures(sign1, sign2)
-		val similarDocs = doLSH(0.5,n, signatureSeq)
-		println(similarDocs)
+		// val comparison = jaccardSimilarity(docSet1, docSet2)
+		// val sign1 = minHash(universalMap, docSet1, n)
+		// val sign2 = minHash(universalMap, docSet2, n)
+		// val signatureSeq = Seq(sign1, sign2)
+		// val frac = compareSignatures(sign1, sign2)
+		// val similarDocs = doLSH(0.5,n, signatureSeq)
+		// println(similarDocs)
+
+		println(testFunc1(documents))
+
 	}
 
 	//Only Jaccard similarity between all documents
-	def testFunc1(documentShingles: Seq[TreeSet[Int]]){
+	def testFunc1(documentShingles: Seq[TreeSet[Int]]): List[(Int, Int, Double)] = {
 		//create a list with document IDs (0 -> numDocs - 1) for
 		//indexing the documents
-		val docIDs = for(i <- 0 to (documentShingles.size - 1)) yield {i}
-		val documentPairs: List[(Int, Int)] = documentList.combinations(2).toList
+		val docIDs: List[Int] =  List.range(0, documentShingles.size)
+		val documentPairs: List[List[Int]] = docIDs.combinations(2).toList
 
-		for (pair <- documentPairs) {
-			val doc1 = documentShingles(pair(0))
-			val doc2 = documentShingles(pair(1))
-			val comparison = jaccardSimilarity(doc1, doc2)
-		}
+		val docSimilarity: List[(Int, Int, Double)] = 
+			documentPairs.map(
+							pair => {
+								val doc1 = documentShingles(pair(0))
+								val doc2 = documentShingles(pair(1))
+								val comparison:Double = jaccardSimilarity(doc1, doc2)
+								(pair(0), pair(1), comparison)
+								}
+							).toList
+		docSimilarity
 	}
 
 	//Using minHasing
