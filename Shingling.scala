@@ -9,16 +9,17 @@ import scala.util.hashing.MurmurHash3
 object Shingling {
 
 	def main(args:Array[String]){
-		val docSet1 = shingling("test.txt", 2)
-		val docSet2 = shingling("test2.txt", 2)
+		val docSet1 = shingling("test.txt", 3)
+		val docSet2 = shingling("test2.txt", 3)
 		val universalSet: TreeSet[Int] = docSet1.union(docSet2)
 		val universalMap: Map[Int, Int] = universalSet.zipWithIndex.toMap
 		val comparison = jaccardSimilarity(docSet1, docSet2)
-		val sign1 = minHash(universalMap, docSet1, 10)
-		val sign2 = minHash(universalMap, docSet2, 10)
+		//nu gotta be cubic, bro
+		val n = 8
+		val sign1 = minHash(universalMap, docSet1, n)
+		val sign2 = minHash(universalMap, docSet2, n)
 		val signatureSeq = Seq(sign1, sign2)
 		val frac = compareSignatures(sign1, sign2)
-		val n = 100
 		val similarDocs = doLSH(0.5,n, signatureSeq)
 		println(similarDocs)
 		// println(comparison)
@@ -107,10 +108,9 @@ object Shingling {
 		//The set for holding candidate pairs
 		var canidatePairs: Set[(Int, Int)] = Set()
 
-		//Loop through bands and compute the hash for each
-		//signature
+		//Loop through bands and compute the hash for each signature
 		for (band <- 0 to (b - 1)){
-			val buckets: Map[Int, List[Int]] = Map()
+			var buckets: Map[Int, List[Int]] = Map()
 			var docId = 0
 			for (signature <- signatures) {
 				val startIndex = band * r
@@ -120,10 +120,14 @@ object Shingling {
 
 				val documentList: List[Int] = buckets.get(bucketNumber).getOrElse(List())
 				documentList match {
-					case List() => buckets + (bucketNumber -> List(docId))
+					case List() => {
+						//Bucket is empty, add document
+						buckets = buckets + (bucketNumber -> List(docId))
+					}
 					case _ => {
+						//Bucket is not empty, add document to list
 						val newList: List[Int] = documentList :+ docId
-						buckets + (bucketNumber -> newList)
+						buckets = buckets + (bucketNumber -> newList)
 					}
 				}
 				docId += 1
@@ -160,7 +164,7 @@ object Shingling {
 	def getRandB(n: Int): (Int, Int) = {
 		//n (length of signature) has to be cubic => lsh-threshold ~ 0.5
 		val r: Int = Math.cbrt(n).toInt
-		val b : Int = Math.pow(r,r).toInt
+		val b : Int = Math.pow(r,2).toInt
 		(r, b)
 	}
 
