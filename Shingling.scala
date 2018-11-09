@@ -14,15 +14,19 @@ object Shingling {
 		val universalSet: TreeSet[Int] = docSet1.union(docSet2)
 		val universalMap: Map[Int, Int] = universalSet.zipWithIndex.toMap
 		val comparison = jaccardSimilarity(docSet1, docSet2)
-		val test = minHash(universalMap, docSet1, 10)
-		val test2 = minHash(universalMap, docSet2, 10)
-		val frac = compareSignatures(test, test2)
-		println(comparison)
-		println(docSet1)
-		println(docSet2)
-		println(test)
-		println(test2)
-		print(frac)
+		val sign1 = minHash(universalMap, docSet1, 10)
+		val sign2 = minHash(universalMap, docSet2, 10)
+		val signatureSeq = Seq(sign1, sign2)
+		val frac = compareSignatures(sign1, sign2)
+		val n = 100
+		val similarDocs = doLSH(0.5,n, signatureSeq)
+		println(similarDocs)
+		// println(comparison)
+		// println(docSet1)
+		// println(docSet2)
+		// println(test)
+		// println(test2)
+		// print(frac)
 	}
 
 	def jaccardSimilarity (document1: TreeSet[Int],document2: TreeSet[Int]): Double = {
@@ -95,29 +99,32 @@ object Shingling {
 		fraction / numberComponents
 	}
 
-	def doLSH(threshold: Double, n: Int, signatures: Seq(Seq[Int])): Seq[(Int, Int, Double)] = {
+	def doLSH(threshold: Double, n: Int, signatures: Seq[Seq[Int]]): Seq[(Int, Int, Double)] = {
 		val rAndB: (Int, Int) = getRandB(n)
-		val r: Int = rAndB(0)
-		val b: Int = rAndB(1)
+		val r: Int = rAndB._1.toInt
+		val b: Int = rAndB._2.toInt
 
 		//The set for holding candidate pairs
-		var canidatePairs: Set((Int, Int)) = Set()
+		var canidatePairs: Set[(Int, Int)] = Set()
 
 		//Loop through bands and compute the hash for each
 		//signature
 		for (band <- 0 to (b - 1)){
-			val buckets: Map[Int, List(Int)] = Map()
+			val buckets: Map[Int, List[Int]] = Map()
 			var docId = 0
 			for (signature <- signatures) {
 				val startIndex = band * r
 				val endIndex = startIndex + r
 				val slicedSignature = signature.slice(startIndex, endIndex)
-				val bucketNumber = seqHash(slicedSignature)
+				val bucketNumber = MurmurHash3.seqHash(slicedSignature)
 
-				val documentList = map.get(bucketNumer).get
+				val documentList: List[Int] = buckets.get(bucketNumber).getOrElse(List())
 				documentList match {
-					case None => buckets + (bucketNumber -> List(docId))
-					case _ => buckets + (bucketNumber -> documentList :+ docId)
+					case List() => buckets + (bucketNumber -> List(docId))
+					case _ => {
+						val newList: List[Int] = documentList :+ docId
+						buckets + (bucketNumber -> newList)
+					}
 				}
 				docId += 1
 			}
@@ -137,27 +144,27 @@ object Shingling {
 			}
 		}
 
-		var similarDocuments: Seq[(Int, Int, Double)] =
+		val similarDocuments: Seq[(Int, Int, Double)] =
 			canidatePairs
 			.map(x => {
-				val doc1ID = x(0)
-				val doc1 = signaturs(doc1ID)
-				val doc2ID = x(1)
-				val doc2 = signaturs(doc2ID)
+				val doc1ID = x._1
+				val doc1 = signatures(doc1ID)
+				val doc2ID = x._2
+				val doc2 = signatures(doc2ID)
 				val similarity : Double = compareSignatures(doc1, doc2)
 				(doc1ID, doc2ID, similarity)
-			})
+			}).toSeq.filter( tuple => tuple._3 > threshold)
 		similarDocuments
 	}
 
 	def getRandB(n: Int): (Int, Int) = {
 		//n (length of signature) has to be cubic => lsh-threshold ~ 0.5
-		val r: Int = Math.cbrt(n)
-		val b : Int = Math.pow(r,r)
+		val r: Int = Math.cbrt(n).toInt
+		val b : Int = Math.pow(r,r).toInt
 		(r, b)
 	}
 
-	def getCandidatePairs(documentList: List[Int]): Set((Int, Int)) = {
+	def getCandidatePairs(documentList: List[Int]): Set[(Int, Int)] = {
 		val pairs: Set[(Int, Int)] = documentList.combinations(2)
 					.toList
 					.map(x => (x(0), x(1)))
