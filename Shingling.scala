@@ -11,18 +11,17 @@ object Shingling {
 
 	def main(args:Array[String]){
 
-		val directory = "test"
+		val directory = "documents"
 
 		var documents: Seq[TreeSet[Int]] = Seq()
 		var universalSet: TreeSet[Int] =TreeSet()
 
 		//size of the shingles
-		val k = 3
+		val k = 5
 		//length of signature (should be cubic)
-		val n = 8
+		val n = 64
 
 		val files = new File(directory).listFiles
-	
 
 		for(file <- files){
 			val path: String = directory + "/" + file.getName
@@ -41,7 +40,8 @@ object Shingling {
 		// val similarDocs = doLSH(0.5,n, signatureSeq)
 		// println(similarDocs)
 
-		println(testFunc1(documents))
+		println(testFunc3(documents, universalMap, n, 0.0))
+		//println(testFunc2(documents, universalMap, n))
 
 	}
 
@@ -52,26 +52,50 @@ object Shingling {
 		val docIDs: List[Int] =  List.range(0, documentShingles.size)
 		val documentPairs: List[List[Int]] = docIDs.combinations(2).toList
 
-		val docSimilarity: List[(Int, Int, Double)] = 
-			documentPairs.map(
-							pair => {
-								val doc1 = documentShingles(pair(0))
-								val doc2 = documentShingles(pair(1))
-								val comparison:Double = jaccardSimilarity(doc1, doc2)
-								(pair(0), pair(1), comparison)
-								}
-							).toList
+		val docSimilarity: List[(Int, Int, Double)] =
+			documentPairs
+			.map(pair => {
+					val doc1 = documentShingles(pair(0))
+					val doc2 = documentShingles(pair(1))
+					val comparison: Double = jaccardSimilarity(doc1, doc2)
+					(pair(0), pair(1), comparison)
+					}
+				).toList
 		docSimilarity
 	}
 
 	//Using minHasing
-	def testFunc2(documents: Seq[TreeSet[Int]], universalMap: Map[Int, Int], n: Int){
+	def testFunc2(documentShingles: Seq[TreeSet[Int]], universalMap: Map[Int, Int], n: Int): List[(Int, Int, Double)] ={
 
+		val documentSignatures: Seq[Seq[Int]] =
+			documentShingles.map(document => {
+				minHash(universalMap, document, n)
+			})
+
+		val docIDs: List[Int] =  List.range(0, documentShingles.size)
+		val documentPairs: List[List[Int]] = docIDs.combinations(2).toList
+
+		val docSimilarity: List[(Int, Int, Double)] =
+			documentPairs
+			.map(pair => {
+					val doc1 = documentSignatures(pair(0))
+					val doc2 = documentSignatures(pair(1))
+					val comparison: Double = compareSignatures(doc1, doc2)
+					(pair(0), pair(1), comparison)
+					}
+				).toList
+		docSimilarity
 	}
 
 	//Using LSH
-	def testFunc3(documents: Seq[TreeSet[Int]], universalMap: Map[Int, Int], n: Int){
+	def testFunc3(documentShingles: Seq[TreeSet[Int]], universalMap: Map[Int, Int], n: Int, threshold: Double): List[(Int, Int, Double)] = {
 
+		val documentSignatures: Seq[Seq[Int]] =
+			documentShingles.map(document => {
+				minHash(universalMap, document, n)
+			})
+
+		doLSH(threshold, n, documentSignatures).toList
 	}
 
 	def jaccardSimilarity (document1: TreeSet[Int],document2: TreeSet[Int]): Double = {
