@@ -3,6 +3,7 @@ import java.security.MessageDigest
 import scala.collection.mutable.TreeSet
 import java.nio.ByteBuffer
 import scala.util.Random
+import java.lang.Math
 
 object Shingling {
 
@@ -75,24 +76,41 @@ object Shingling {
 		}
 
 		for (value <- document) {
-			val rowNum = hashedShingles.get(value).getOrElse(-1)
-			//the documents contains hash from row
-			if (rowNum >= 0) {
+			val rowNum = hashedShingles.get(value).get
 
-				for (i <- 0 to (n - 1)) {
-					val sigHash = (aValues(i) * rowNum + bValues(i)) % c
-					if (signatureVector(i) > sigHash) {
-						signatureVector = signatureVector updated (i, sigHash)
-					}
+			for (i <- 0 to (n - 1)) {
+				val sigHash = (aValues(i) * rowNum + bValues(i)) % c
+				if (signatureVector(i) > sigHash) {
+					signatureVector = signatureVector updated (i, sigHash)
 				}
 			}
 		}
 		signatureVector
 	}
+
 	def compareSignatures(signature1:Seq[Int], signature2:Seq[Int]): Double = {
 		val fraction: Double = (signature1.intersect(signature2)).size
 		val numberComponents: Double = signature1.size
 		fraction / numberComponents
+	}
 
+	def doLSH(threshold: Double, n: Int, signatures: Seq(Seq[Int])): Seq[(Int, Int, Double)] = {
+		val rAndB: (Int, Int) = getRandB(n)
+		val r: Int = rAndB(0)
+		val b: Int = rAndB(1)
+
+		for (band <- 0 to (b -1)){
+			val buckets: Map[Int, List(Int)] = Map()
+			for (signature <- signatures) {
+
+			}
+		}
+	}
+
+	def getRandB(n: Int): (Int, Int) = {
+		//n (length of signature) has to be cubic => lsh-threshold ~ 0.5
+		val r: Int = Math.cbrt(n)
+		val b : Int = Math.pow(r,r)
+		(r, b)
 	}
 }
