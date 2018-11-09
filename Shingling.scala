@@ -14,11 +14,13 @@ object Shingling {
 		val comparison = jaccardSimilarity(docSet1, docSet2)
 		val test = minHash(universalMap, docSet1, 10)
 		val test2 = minHash(universalMap, docSet2, 10)
+		val frac = compareSignatures(test, test2)
 		println(comparison)
 		println(docSet1)
-		print(docSet2)
+		println(docSet2)
 		println(test)
 		println(test2)
+		print(frac)
 	}
 
 	def jaccardSimilarity (document1: TreeSet[Int],document2: TreeSet[Int]): Double = {
@@ -72,7 +74,6 @@ object Shingling {
     			r.nextInt(c)
 		}
 
-		//var rowNumber = 0
 		for (value <- document) {
 			val rowNum = hashedShingles.get(value).getOrElse(-1)
 			//the documents contains hash from row
@@ -81,12 +82,17 @@ object Shingling {
 				for (i <- 0 to (n - 1)) {
 					val sigHash = (aValues(i) * rowNum + bValues(i)) % c
 					if (signatureVector(i) > sigHash) {
-						signatureVector updated (i, sigHash)
+						signatureVector = signatureVector updated (i, sigHash)
 					}
 				}
 			}
 		}
 		signatureVector
 	}
+	def compareSignatures(signature1:Seq[Int], signature2:Seq[Int]): Double = {
+		val fraction: Double = (signature1.intersect(signature2)).size
+		val numberComponents: Double = signature1.size
+		fraction / numberComponents
 
+	}
 }
