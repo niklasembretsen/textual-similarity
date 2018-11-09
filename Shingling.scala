@@ -4,6 +4,7 @@ import scala.collection.mutable.TreeSet
 import java.nio.ByteBuffer
 import scala.util.Random
 import java.lang.Math
+import scala.util.hashing.MurmurHash3
 
 object Shingling {
 
@@ -99,14 +100,25 @@ object Shingling {
 		val r: Int = rAndB(0)
 		val b: Int = rAndB(1)
 
-		for (band <- 0 to (b -1)){
+		for (band <- 0 to (b - 1)){
 			val buckets: Map[Int, List(Int)] = Map()
+			var docId = 0
 			for (signature <- signatures) {
+				val startIndex = band * r
+				val endIndex = startIndex + r
+				val slicedSignature = signature.slice(startIndex, endIndex)
+				val bucketNumber = seqHash(slicedSignature)
 
+				val documentList = map.get(bucketNumer).get
+				documentList match {
+					case None => buckets + (bucketNumber -> List(docId))
+					case _ => buckets + (bucketNumber -> documentList :+ docId)
+				}
+				docId += 1
 			}
 		}
 	}
-
+	
 	def getRandB(n: Int): (Int, Int) = {
 		//n (length of signature) has to be cubic => lsh-threshold ~ 0.5
 		val r: Int = Math.cbrt(n)
