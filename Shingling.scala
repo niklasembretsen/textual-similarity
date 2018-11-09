@@ -10,35 +10,58 @@ import scala.util.hashing.MurmurHash3
 object Shingling {
 
 	def main(args:Array[String]){
-		val docSet1 = shingling("test.txt", 3)
-		val docSet2 = shingling("test2.txt", 3)
+
+		val directory = "test"
+
+		var documents: Seq[TreeSet[Int]] = Seq()
+		var universalSet: TreeSet[Int] =TreeSet()
+
+		//size of the shingles
 		val k = 3
-		val directory = "/test"
+		//length of signature (should be cubic)
+		val n = 8
+
 		val files = new File(directory).listFiles
 
-		val universalSet: TreeSet[Int] = 
-					files.flatMap(file => shingling(file, k))
-						 .toSet
+		for(file <- files){
+			val docSet = shingling(file.getName, k)
+			documents = documents :+ docSet
+			universalSet = universalSet ++ docSet
+		}
 
-		println(universalSet)
-
-		docSet1.union(docSet2)
 		val universalMap: Map[Int, Int] = universalSet.zipWithIndex.toMap
+
 		val comparison = jaccardSimilarity(docSet1, docSet2)
-		//nu gotta be cubic, bro
-		val n = 8
 		val sign1 = minHash(universalMap, docSet1, n)
 		val sign2 = minHash(universalMap, docSet2, n)
 		val signatureSeq = Seq(sign1, sign2)
 		val frac = compareSignatures(sign1, sign2)
 		val similarDocs = doLSH(0.5,n, signatureSeq)
 		println(similarDocs)
-		// println(comparison)
-		// println(docSet1)
-		// println(docSet2)
-		// println(test)
-		// println(test2)
-		// print(frac)
+	}
+
+	//Only Jaccard similarity between all documents
+	def testFunc1(documentShingles: Seq[TreeSet[Int]]){
+		//create a list with document IDs (0 -> numDocs - 1) for
+		//indexing the documents
+		val docIDs = for(i <- 0 to (documentShingles.size - 1)) yield {i}
+		val documentPairs: List[(Int, Int)] = documentList.combinations(2).toList
+
+		for (pair <- documentPairs) {
+			val doc1 = documentShingles(pair(0))
+			val doc2 = documentShingles(pair(1))
+			val comparison = jaccardSimilarity(doc1, doc2)
+		}
+	}
+
+	//Using minHasing
+	def testFunc2(documents: Seq[TreeSet[Int]], universalMap: Map[Int, Int], n: Int){
+
+	}
+
+	//Using LSH
+	def testFunc3(documents: Seq[TreeSet[Int]], universalMap: Map[Int, Int], n: Int){
+
 	}
 
 	def jaccardSimilarity (document1: TreeSet[Int],document2: TreeSet[Int]): Double = {
