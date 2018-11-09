@@ -100,6 +100,11 @@ object Shingling {
 		val r: Int = rAndB(0)
 		val b: Int = rAndB(1)
 
+		//The set for holding candidate pairs
+		var canidatePairs: Set((Int, Int)) = Set()
+
+		//Loop through bands and compute the hash for each
+		//signature
 		for (band <- 0 to (b - 1)){
 			val buckets: Map[Int, List(Int)] = Map()
 			var docId = 0
@@ -116,13 +121,47 @@ object Shingling {
 				}
 				docId += 1
 			}
+			//Get all candidate pairs
+			val bucketContents = buckets.values.toList
+
+			for (bucketContent <- bucketContents) {
+
+				//check if bucket has more than one document
+				bucketContent.size match {
+					case 1 =>
+					case _ => {
+						val pairs = getCandidatePairs(bucketContent)
+						canidatePairs = canidatePairs ++ pairs
+					}
+				}
+			}
 		}
+
+		var similarDocuments: Seq[(Int, Int, Double)] =
+			canidatePairs
+			.map(x => {
+				val doc1ID = x(0)
+				val doc1 = signaturs(doc1ID)
+				val doc2ID = x(1)
+				val doc2 = signaturs(doc2ID)
+				val similarity : Double = compareSignatures(doc1, doc2)
+				(doc1ID, doc2ID, similarity)
+			})
+		similarDocuments
 	}
-	
+
 	def getRandB(n: Int): (Int, Int) = {
 		//n (length of signature) has to be cubic => lsh-threshold ~ 0.5
 		val r: Int = Math.cbrt(n)
 		val b : Int = Math.pow(r,r)
 		(r, b)
+	}
+
+	def getCandidatePairs(documentList: List[Int]): Set((Int, Int)) = {
+		val pairs: Set[(Int, Int)] = documentList.combinations(2)
+					.toList
+					.map(x => (x(0), x(1)))
+					.toSet
+		pairs
 	}
 }
