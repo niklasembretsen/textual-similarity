@@ -14,7 +14,7 @@ object TextualSimilarity {
 		//size of the shingles
 		var k = 5
 		//length of signature (should be cubic)
-		var n = 10
+		var n = 1000
 		//the similarity threshold
 		var threshold = 0.0
 
@@ -103,7 +103,6 @@ object TextualSimilarity {
 			documentShingles.map(document => {
 				minHash(universalMap, document, n)
 			})
-
 		val docIDs: List[Int] =  List.range(0, documentShingles.size)
 		val documentPairs: List[List[Int]] = docIDs.combinations(2).toList
 
@@ -129,10 +128,11 @@ object TextualSimilarity {
 			documentShingles.map(document => {
 				minHash(universalMap, document, n)
 			})
-		println("Signatures")
-		for(sig <- documentSignatures){
-			println(sig)
-		}
+
+		// println("Signatures")
+		// for(sig <- documentSignatures){
+		// 	println(sig)
+		// }
 		doLSH(threshold, n, documentSignatures)
 			.toList
 			.sortBy(_._3)
@@ -193,14 +193,13 @@ object TextualSimilarity {
 		// generate n hash functions on the form (ax + b) % c
 		// where a and b are random variables, x the hashed value (shingle)
 		// and c the number of shingles
-		Random.setSeed(10)
 		//Init the signature vector with large value
 		var signatureVector = for(i <- 1 to n) yield {
     			Int.MaxValue
 		}
 		//number of rows of the "characteristic matrix"
 		val c: Int = hashedShingles.size
-		val r = new Random()
+		val r = new Random(10)
 		//generate params for the hash functions
 		val aValues = for(i <- 1 to n) yield {
     			r.nextInt(n)
@@ -209,7 +208,6 @@ object TextualSimilarity {
 		val bValues = for(i <- 1 to n) yield {
     			r.nextInt(n)
 		}
-
 		for (value <- document) {
 			//get the row number of the shingle from the universal set ("Characteristic matrix")
 			val rowNum = hashedShingles.get(value).get
@@ -233,7 +231,7 @@ object TextualSimilarity {
 	*  @return The fraction of components the signatures have in common
 	*/
 	def compareSignatures(signature1:Seq[Int], signature2:Seq[Int]): Double = {
-		var commonComponents: Double = 0
+		var commonComponents: Double = 0.0
 		for (i <- 0 to (signature2.size - 1)) {
 			if (signature1(i) == signature2(i)) {
 				commonComponents += 1
@@ -304,6 +302,8 @@ object TextualSimilarity {
 				}
 			}
 		}
+
+
 		//Compare signatures for all candidate pairs and
 		//keep if similarity > threshold
 		val similarDocuments: Seq[(Int, Int, Double)] =
@@ -330,7 +330,7 @@ object TextualSimilarity {
 		//n (length of signature) has to be cubic => lsh-threshold ~ 0.5
 		val r: Int = Math.cbrt(n).toInt
 		val b : Int = Math.pow(r,2).toInt
-		(r, b)
+		(2, n/2)
 	}
 
 	/** Generate unique pairs from a list of elements
