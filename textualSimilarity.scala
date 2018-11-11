@@ -14,9 +14,9 @@ object TextualSimilarity {
 		//size of the shingles
 		var k = 5
 		//length of signature (should be cubic)
-		var n = 64
+		var n = 10
 		//the similarity threshold
-		var threshold = 0.5
+		var threshold = 0.0
 
 		if(args.length == 3) {
 			//size of the shingles
@@ -26,8 +26,6 @@ object TextualSimilarity {
 			//the similarity threshold
 			threshold = args(2).toDouble
 		}
-
-		println(n + " " + k + " " + threshold)
 
 		val directory = "documents"
 
@@ -45,22 +43,39 @@ object TextualSimilarity {
 
 		val universalMap: Map[Int, Int] = universalSet.zipWithIndex.toMap
 
-		// val comparison = jaccardSimilarity(docSet1, docSet2)
-		// val sign1 = minHash(universalMap, docSet1, n)
-		// val sign2 = minHash(universalMap, docSet2, n)
-		// val signatureSeq = Seq(sign1, sign2)
-		// val frac = compareSignatures(sign1, sign2)
-		// val similarDocs = doLSH(0.5,n, signatureSeq)
-		// println(similarDocs)
+		//println("Universal set")
+		//println(universalMap.toSeq.sortBy(_._2))
 
-		//OBS hardcoded r and b in getRandB
-		println(testFunc3(documents, universalMap, n, threshold))
-		//println(testFunc2(documents, universalMap, n))
+		// println("Shingle sets")
+		// var sum = 0
+		// for (document <- documents) {
+		// 	println(document.size)
+		// 	sum += document.size
+		// }
+		// println("sum: " + sum)
 
+		var t0 = System.nanoTime()
+	    var result = testFunc1(documents, threshold)
+	    var t1 = System.nanoTime()
+	    println("Elapsed time Jaccardian: " + (t1 - t0)/1000000 + "ms")
+	    println(result)
+
+	    t0 = System.nanoTime()
+	    result = testFunc2(documents, universalMap, n, threshold)
+	    t1 = System.nanoTime()
+	    println("Elapsed time minHash: " + (t1 - t0)/1000000 + "ms")
+	    println(result)
+
+	    t0 = System.nanoTime()
+	    //OBS hardcoded r and b in getRandB
+	    result = testFunc3(documents, universalMap, n, threshold)
+	    t1 = System.nanoTime()
+	    println("Elapsed time LSH: " + (t1 - t0)/1000000 + "ms")
+	    println(result)
 	}
 
 	//Only Jaccard similarity between all documents
-	def testFunc1(documentShingles: Seq[TreeSet[Int]]): List[(Int, Int, Double)] = {
+	def testFunc1(documentShingles: Seq[TreeSet[Int]], threshold: Double): List[(Int, Int, Double)] = {
 		//create a list with document IDs (0 -> numDocs - 1) for
 		//indexing the documents
 		val docIDs: List[Int] =  List.range(0, documentShingles.size)
@@ -74,12 +89,15 @@ object TextualSimilarity {
 					val comparison: Double = jaccardSimilarity(doc1, doc2)
 					(pair(0), pair(1), comparison)
 					}
-				).toList
+				)
+			.filter(tuple => tuple._3 > threshold)
+			.toList
+			.sortBy(_._3)
 		docSimilarity
 	}
 
 	//Using minHasing
-	def testFunc2(documentShingles: Seq[TreeSet[Int]], universalMap: Map[Int, Int], n: Int): List[(Int, Int, Double)] ={
+	def testFunc2(documentShingles: Seq[TreeSet[Int]], universalMap: Map[Int, Int], n: Int, threshold: Double): List[(Int, Int, Double)] ={
 
 		val documentSignatures: Seq[Seq[Int]] =
 			documentShingles.map(document => {
@@ -97,7 +115,10 @@ object TextualSimilarity {
 					val comparison: Double = compareSignatures(doc1, doc2)
 					(pair(0), pair(1), comparison)
 					}
-				).toList
+				)
+			.filter(tuple => tuple._3 > threshold)
+			.toList
+			.sortBy(_._3)
 		docSimilarity
 	}
 
@@ -108,8 +129,13 @@ object TextualSimilarity {
 			documentShingles.map(document => {
 				minHash(universalMap, document, n)
 			})
-
-		doLSH(threshold, n, documentSignatures).toList
+		println("Signatures")
+		for(sig <- documentSignatures){
+			println(sig)
+		}
+		doLSH(threshold, n, documentSignatures)
+			.toList
+			.sortBy(_._3)
 	}
 
 	/** Computes the Jaccard similarity between two documents of hashed shingles
@@ -174,14 +200,14 @@ object TextualSimilarity {
 		}
 		//number of rows of the "characteristic matrix"
 		val c: Int = hashedShingles.size
-		val r = new Random(c)
+		val r = new Random()
 		//generate params for the hash functions
 		val aValues = for(i <- 1 to n) yield {
-    			r.nextInt(c)
+    			r.nextInt(n)
 		}
 
 		val bValues = for(i <- 1 to n) yield {
-    			r.nextInt(c)
+    			r.nextInt(n)
 		}
 
 		for (value <- document) {
@@ -207,9 +233,14 @@ object TextualSimilarity {
 	*  @return The fraction of components the signatures have in common
 	*/
 	def compareSignatures(signature1:Seq[Int], signature2:Seq[Int]): Double = {
-		val fraction: Double = (signature1.intersect(signature2)).size
+		var commonComponents: Double = 0
+		for (i <- 0 to (signature2.size - 1)) {
+			if (signature1(i) == signature2(i)) {
+				commonComponents += 1
+			}
+		}
 		val numberComponents: Double = signature1.size
-		fraction / numberComponents
+		commonComponents / numberComponents
 	}
 
 	/** Perform Locality Sensitive Hashing (LSH)
@@ -299,7 +330,7 @@ object TextualSimilarity {
 		//n (length of signature) has to be cubic => lsh-threshold ~ 0.5
 		val r: Int = Math.cbrt(n).toInt
 		val b : Int = Math.pow(r,2).toInt
-		(2, 32)
+		(r, b)
 	}
 
 	/** Generate unique pairs from a list of elements
