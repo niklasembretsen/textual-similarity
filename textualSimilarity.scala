@@ -11,15 +11,28 @@ object TextualSimilarity {
 
 	def main(args:Array[String]){
 
+		//size of the shingles
+		var k = 5
+		//length of signature (should be cubic)
+		var n = 64
+		//the similarity threshold
+		var threshold = 0.5
+
+		if(args.length == 3) {
+			//size of the shingles
+			k = args(0).toInt
+			//length of signature (should be cubic)
+			n = args(1).toInt
+			//the similarity threshold
+			threshold = args(2).toDouble
+		}
+
+		println(n + " " + k + " " + threshold)
+
 		val directory = "documents"
 
 		var documents: Seq[TreeSet[Int]] = Seq()
 		var universalSet: TreeSet[Int] =TreeSet()
-
-		//size of the shingles
-		val k = 5
-		//length of signature (should be cubic)
-		val n = 64
 
 		val files = new File(directory).listFiles
 
@@ -41,7 +54,7 @@ object TextualSimilarity {
 		// println(similarDocs)
 
 		//OBS hardcoded r and b in getRandB
-		println(testFunc3(documents, universalMap, n, 0.6))
+		println(testFunc3(documents, universalMap, n, threshold))
 		//println(testFunc2(documents, universalMap, n))
 
 	}
